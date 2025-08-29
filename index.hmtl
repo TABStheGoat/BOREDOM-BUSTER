@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Anti-Boredom Society App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Optional: Extend Tailwind's default configuration if needed
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-purple': '#6366F1',
+                        'brand-yellow': '#FACC15',
+                        'brand-pink': '#F472B6',
+                        'brand-green': '#10B981',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div id="app" class="flex flex-col min-h-screen">
+
+        <header class="bg-white shadow-md p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <img src="https://assets.website-files.com/6090a9b88301132c1c696e57/6090a9b8830113f380696e83_goat-mascot.png" alt="TABS the Goat" class="h-10 w-10">
+                <h1 class="text-3xl font-extrabold text-brand-purple">
+                    <span class="hidden sm:inline">The Anti-Boredom Society</span>
+                    <span class="sm:hidden">TABS</span>
+                </h1>
+            </div>
+            <div id="auth-status" class="flex items-center space-x-4">
+                <span class="text-sm font-medium text-gray-700">Logged in</span>
+                <button id="logout-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">
+                    Log Out
+                </button>
+            </div>
+        </header>
+
+        <main class="flex-1 flex flex-col sm:flex-row">
+            
+            <nav class="w-full sm:w-64 bg-gray-800 p-4 sm:p-6 text-white sm:shadow-lg">
+                <ul class="flex sm:flex-col justify-around sm:justify-start space-x-2 sm:space-x-0 sm:space-y-4">
+                    <li><button data-section="dashboard" class="nav-btn w-full text-left px-4 py-2 rounded-lg bg-gray-700 hover:bg-brand-purple transition-colors">Dashboard</button></li>
+                    <li><button data-section="activities" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-brand-purple transition-colors">Activities</button></li>
+                    <li><button data-section="story-time" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-brand-purple transition-colors">Story Time</button></li>
+                    <li><button data-section="crafts" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-brand-purple transition-colors">Crafts</button></li>
+                    <li><button data-section="games" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-brand-purple transition-colors">Games</button></li>
+                    <li><button data-section="members-only" class="nav-btn w-full text-left px-4 py-2 rounded-lg hover:bg-brand-purple transition-colors">Members Only</button></li>
+                </ul>
+            </nav>
+
+            <section id="content-container" class="flex-1 p-4 sm:p-8 bg-gray-100 overflow-y-auto">
+                
+                <div id="dashboard" class="content-section">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Welcome, Agent!</h2>
+                    <p class="text-lg text-gray-600 mb-4">Your mission is to find and defeat boredom. Use the navigation to discover your next adventure!</p>
+                    <div id="dashboard-status" class="p-6 bg-white rounded-lg shadow-md border-t-4 border-brand-purple">
+                        <h3 class="text-xl font-bold text-gray-800 mb-2">My Membership</h3>
+                        <p class="text-gray-600" id="membership-status">Loading membership status...</p>
+                    </div>
+                </div>
+
+                <div id="activities" class="content-section hidden">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Activities</h2>
+                    <div id="activities-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+
+                <div id="story-time" class="content-section hidden">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Story Time</h2>
+                    <div id="story-time-list" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        </div>
+                </div>
+                
+                <div id="crafts" class="content-section hidden">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">DIY Crafts</h2>
+                    <div id="crafts-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+
+                <div id="games" class="content-section hidden">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Games</h2>
+                    <div id="games-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        </div>
+                </div>
+
+                <div id="members-only" class="content-section hidden">
+                    <h2 class="text-3xl font-bold text-gray-800 mb-6">Exclusive Access</h2>
+                    <div id="members-only-content" class="p-6 bg-white rounded-lg shadow-md border-t-4 border-brand-pink">
+                        <p class="text-lg text-gray-600">This content is for members of TABS's crew only!</p>
+                        <p class="mt-4 text-gray-500">Upgrade your membership to access exclusive missions, content, and more!</p>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- 1. Firebase Configuration ---
+        // IMPORTANT: Replace these placeholders with your actual Firebase project credentials.
+        // You can find these in your Firebase project settings.
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- 2. Authentication & User State ---
+        let currentUser = null;
+
+        // Listen for auth state changes
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                // User is signed in.
+                currentUser = user;
+                console.log("User logged in:", user.uid);
+                document.getElementById('auth-status').innerHTML = `<span class="text-sm font-medium text-gray-700">Agent: ${user.uid.substring(0, 6)}...</span><button id="logout-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors">Log Out</button>`;
+                
+                // Fetch and display membership status
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const data = userDoc.data();
+                    document.getElementById('membership-status').textContent = `Status: ${data.isMember ? 'Official Member' : 'Guest'}`;
+                } else {
+                    document.getElementById('membership-status').textContent = `Status: Guest`;
+                }
+
+                document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+            } else {
+                // User is signed out. Sign in anonymously.
+                try {
+                    await auth.signInAnonymously();
+                } catch (error) {
+                    console.error("Error signing in anonymously:", error);
+                    document.getElementById('auth-status').textContent = "Login Failed";
+                }
+            }
+        });
+
+        // --- 3. UI Navigation and Content Management ---
+        const contentSections = document.querySelectorAll('.content-section');
+        const navButtons = document.querySelectorAll('.nav-btn');
+
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const sectionId = button.dataset.section;
+
+                // Hide all sections
+                contentSections.forEach(section => section.classList.add('hidden'));
+
+                // Show the selected section
+                document.getElementById(sectionId).classList.remove('hidden');
+
+                // Update active button state
+                navButtons.forEach(btn => btn.classList.remove('bg-gray-700'));
+                button.classList.add('bg-gray-700');
+
+                // Load content for the selected section
+                switch (sectionId) {
+                    case 'activities':
+                        loadContent('activities');
+                        break;
+                    case 'story-time':
+                        loadContent('story_time');
+                        break;
+                    case 'crafts':
+                        loadContent('crafts');
+                        break;
+                    case 'games':
+                        loadContent('games');
+                        break;
+                    case 'members-only':
+                        loadMembersOnlyContent();
+                        break;
+                }
+            });
+        });
+
+        // --- 4. Firestore Data Fetching and Rendering ---
+        
+        // This function would typically get data from Firestore.
+        // For this demo, we use placeholder data to show how it works.
+        const dummyData = {
+            activities: [
+                { title: "Backyard Safari", description: "Grab a magnifying glass and explore your backyard for bugs!", image: "https://via.placeholder.com/300x200?text=Backyard+Safari", isMemberContent: false },
+                { title: "Living Room Fort", description: "Build the ultimate fort with pillows, blankets, and chairs.", image: "https://via.placeholder.com/300x200?text=Living+Room+Fort", isMemberContent: false },
+                { title: "Stargazing Mission", description: "Find constellations and discover the magic of the night sky.", image: "https://via.placeholder.com/300x200?text=Stargazing+Mission", isMemberContent: true },
+            ],
+            story_time: [
+                { title: "The Adventures of TABS", description: "A story about TABS the goat finding her purpose in life.", videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ", isMemberContent: false },
+                { title: "The Magical Treehouse", description: "What happens when a treehouse grants wishes? A tale of wonder.", videoUrl: "https://www.youtube.com/embed/o-YhN-FqY9s", isMemberContent: true },
+            ],
+            crafts: [
+                { title: "DIY Cardboard Robot", description: "Transform an old box into a robot. All you need is paint and imagination!", image: "https://via.placeholder.com/300x200?text=Cardboard+Robot", isMemberContent: false },
+                { title: "Friendship Bracelets", description: "Create bracelets with yarn and thread to share with your friends.", image: "https://via.placeholder.com/300x200?text=Bracelets", isMemberContent: false },
+                { title: "Recycled Art", description: "Turn old junk into beautiful sculptures and decorations.", image: "https://via.placeholder.com/300x200?text=Recycled+Art", isMemberContent: true },
+            ],
+            games: [
+                { title: "Treasure Hunt", description: "Create a treasure map and hide a secret prize!", image: "https://via.placeholder.com/300x200?text=Treasure+Hunt", isMemberContent: false },
+                { title: "Charades Extravaganza", description: "Act out animals, movie characters, and more with your family.", image: "https://via.placeholder.com/300x200?text=Charades", isMemberContent: false },
+                { title: "The Great Egg Drop", description: "Build a contraption to protect an egg from a big fall.", image: "https://via.placeholder.com/300x200?text=Egg+Drop", isMemberContent: true },
+            ]
+        };
+
+        function renderContent(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // Clear previous content
+
+            data.forEach(item => {
+                const isMember = false; // Placeholder: This should come from a user's data
+                const isLocked = item.isMemberContent && !isMember;
+
+                const cardHtml = `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden relative">
+                        ${isLocked ? '<div class="absolute inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center text-white text-center font-bold text-xl p-4">🔒 Members Only</div>' : ''}
+                        ${item.image ? `<img src="${item.image}" alt="${item.title}" class="w-full h-48 object-cover">` : ''}
+                        ${item.videoUrl ? `<iframe src="${item.videoUrl}" frameborder="0" allowfullscreen class="w-full h-48 object-cover"></iframe>` : ''}
+                        <div class="p-4">
+                            <h3 class="font-bold text-lg text-gray-800">${item.title}</h3>
+                            <p class="text-sm text-gray-600">${item.description}</p>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        // --- 5. Initial App Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial state
+            document.querySelector('[data-section="dashboard"]').classList.add('bg-gray-700');
+        });
+
+        // Function to load content from a specific collection (e.g., 'activities')
+        // In a real app, this would be a Firestore query.
+        function loadContent(collectionName) {
+            // For now, we'll use our dummy data to demonstrate functionality
+            if (dummyData[collectionName]) {
+                renderContent(`${collectionName}-list`, dummyData[collectionName]);
+            }
+        }
+        
+        // This function checks the user's membership and displays appropriate content
+        // In a real app, this would get the user's status from Firestore
+        async function loadMembersOnlyContent() {
+             const userDoc = await db.collection('users').doc(currentUser.uid).get();
+             const isMember = userDoc.exists && userDoc.data().isMember;
+
+             const membersOnlyContent = document.getElementById('members-only-content');
+             if (isMember) {
+                 membersOnlyContent.innerHTML = `
+                     <p class="text-lg text-gray-600">Welcome, Official Member! Here are your exclusive missions:</p>
+                     <ul class="list-disc list-inside mt-4 text-gray-500 space-y-2">
+                         <li>Mission: Build a Secret Agent Headquarters!</li>
+                         <li>Mission: Design a brand new species of imaginary animal!</li>
+                         <li>Mission: Create your own comic book starring TABS!</li>
+                     </ul>
+                 `;
+             } else {
+                membersOnlyContent.innerHTML = `
+                    <p class="text-lg text-gray-600">This content is for members of TABS's crew only!</p>
+                    <p class="mt-4 text-gray-500">Upgrade your membership to access exclusive missions, content, and more!</p>
+                `;
+             }
+        }
+        
+    </script>
+</body>
+</html>
